@@ -46,6 +46,7 @@ class Graph:
         nx.draw(self.G,with_labels=True)
         plt.show()
 
+    ## Creating a color map for each node for visualisation
     def drawGraphColors(self):
         node_color =[]
         for node in self.G.nodes:
@@ -69,39 +70,9 @@ class Graph:
         nx.draw(self.G,with_labels=True,node_color=node_color)
         plt.show()
 
-## coverage for each set of nodes which returns 0 if any one of the feature is not present in the selected combination
-    def coverage(self,nodeList,features):
 
-        coverageValue = 0
-        featurePresent = {}
-        coveredNodes = []
-        featureCount = {}
-
-        for feature in features:
-            for node in nodeList:
-                if hasattr(node, feature) and (getattr(node, feature)==True):
-                    coverageValue += 1
-                    featurePresent[feature] = True
-                for neighbor in self.G.neighbors(node):
-                    ## Do not consider the node which has already considered
-                    if neighbor not in coveredNodes:
-                        if hasattr(neighbor,feature) and (getattr(neighbor,feature) ==True):
-                            coverageValue += 1
-                        ## Add the code for
-                        ##featurePresent[feature] = True
-                        coveredNodes.append(neighbor)
-
-
-        if(len(features) == len(featurePresent)):
-            return coverageValue
-        else:
-            return 0
-
-
+    ## For given set of nodes we generate a coverage class which specifies the feature count of the features
     def coverageSet(self,nodeList,features):
-
-        coverageValue = 0
-        featurePresent = {}
         coveredNodes = []
         featureCount = {}
 
@@ -130,52 +101,17 @@ class Graph:
             coverageObject = coverageClass(nodeList,featureCount)
         return coverageObject
 
-## The function which chooses nodes in the graph
-    def choseNodes(self,features):
-        featuresList = features
-        nodeList = self.G.nodes
-        totalCoverageSet = []
-        maxCoverage = 0
-        ## Currently considering only chosing two nodes. If multiple is needed can write a recursive function
-        for node1 in self.G.nodes:
-            for node2 in self.G.nodes:
-                if(node1 != node2):
-                    currCoverage = self.coverage([node1,node2],features)
-                    if(currCoverage>= maxCoverage):
-                        maxCoverage = currCoverage
-                        selectedNode1 = node1
-                        selectedNode2 = node2
-
-        return  [selectedNode1,selectedNode2]
-
-    def choseNodesCoverageSet(self,features):
-        featuresList = features
-        nodeList = self.G.nodes
-        totalCoverageSet = []
-        maxCoverage = 0
-        ## Currently considering only chosing two nodes. If multiple is needed can write a recursive function
-        nodeSet = list(self.G.nodes)
-
-        for i in range(len(nodeSet)):
-            for j in range(i+1,len(nodeSet)):
-                node1 = nodeSet[i]
-                node2 = nodeSet[j]
-                currCoverageSet = self.coverageSet([node1,node2],features)
-                totalCoverageSet.append(currCoverageSet)
-
-        return  totalCoverageSet
-
-
-    def choseRecursiveCoverageSet(self,features,count):
+    ## Recursively chosing the nodes depdending on the size to form a nodeSet
+    def choseRecursiveCoverageSet(self,features,committeSize):
         nodeSet = list(self.G.nodes)
         presentNodeSet = []
         nodeCombinations = []
-        self.choseRecursiveCoverageSetUtils(features,nodeSet,0,count,presentNodeSet,nodeCombinations)
+        self.choseRecursiveCoverageSetUtils(features,nodeSet,0,committeSize,presentNodeSet,nodeCombinations)
         return nodeCombinations
 
-    def choseRecursiveCoverageSetUtils(self,features,nodeSet,start,count,presentNodeSet,nodeCombinations):
+    def choseRecursiveCoverageSetUtils(self,features,nodeSet,start,committeeSize,presentNodeSet,nodeCombinations):
         ## Number of nodes in the presentNode set is total number of nodes to be considered
-        if(count == len(presentNodeSet)):
+        if(committeeSize == len(presentNodeSet)):
             ##nodeCombinations.append(presentNodeSet)
             currCoverageSet = self.coverageSet(presentNodeSet,features)
             nodeCombinations.append(copy.deepcopy(currCoverageSet))
@@ -183,10 +119,10 @@ class Graph:
 
         for i in range(start,len(nodeSet)):
             presentNodeSet.append(nodeSet[i])
-            self.choseRecursiveCoverageSetUtils(features,nodeSet,i+1,count,presentNodeSet,nodeCombinations)
+            self.choseRecursiveCoverageSetUtils(features,nodeSet,i+1,committeeSize,presentNodeSet,nodeCombinations)
             presentNodeSet.remove(presentNodeSet[len(presentNodeSet)-1])
 
-    ## Choses the node combination if it contains all the feaures
+    ## Chosing the best nodeSet which contains all the feaures and covers maximum features
     def choseBestNodes(self,fullCoverageSet,featureList):
         maxFeatureCount = 0
         maxCoverageNode = fullCoverageSet[0]
@@ -213,8 +149,6 @@ if __name__ == "__main__":
 
     Graph = Graph("bruteForce")
 
-
-
     Node1 = Graph.createNode(1, True, True,True)
     Node2 = Graph.createNode(2, False, False,False)
     Node3 = Graph.createNode(3, True, False,False)
@@ -225,15 +159,14 @@ if __name__ == "__main__":
     Node8 = Graph.createNode(8, False, False,False)
     Node9 = Graph.createNode(9, True, True,True)
     Node10 = Graph.createNode(10, False, True,True)
-    ##Graph.addNode(11,False,False)
-    ##raph.addNode(12, True, True)
+
 
     Graph.createEdge(Node1,Node2)
     Graph.createEdge(Node1,Node3)
     Graph.createEdge(Node1,Node4)
     Graph.createEdge(Node1,Node5)
     Graph.createEdge(Node2,Node3)
-    #Graph.createEdge(Node3,Node4)
+    Graph.createEdge(Node3,Node4)
     Graph.createEdge(Node4,Node5)
     Graph.createEdge(Node1,Node6)
     Graph.createEdge(Node6,Node7)
@@ -245,20 +178,7 @@ if __name__ == "__main__":
     Graph.createEdge(Node9,Node10)
     Graph.createEdge(Node2,Node7)
 
-    # nodeSelected = Graph.choseNodes(["feature1","feature2","feature3"])
-    # print(nodeSelected[0].name)
-    # print(nodeSelected[1].name)
-
-
-
-    # nodeSelected = Graph.choseNodesCoverageSet(["feature1", "feature2","feature3"])
-    #
-    # print(nodeSelected)
-    #
-    # for cover in nodeSelected:
-    #    print(cover)
-
-    nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],4)
+    nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],3)
     print(nodeSelected)
     for cover in nodeSelected:
         print(cover)
