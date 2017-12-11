@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import copy
+import time
 
 class Node:
     def __init__(self,name,feature1,feature2,feature3):
@@ -76,6 +77,11 @@ class Graph:
         for neighbors in self.G.neighbors(node):
             neighbors._visited = True
 
+
+    def markNodesUnvisited(self):
+        for node in self.G.nodes:
+            node._visited = False
+
     def neighborLength(self,neighborList):
         count = 0
         for node in neighborList:
@@ -85,6 +91,7 @@ class Graph:
 
     def choseBestNodes(self,virtualNodeList):
         nodesChosen = []
+        totalCount = 0
         ## Need to chose nodes which has the same feature as virtual node and has high degree.
         ## We are considering all the neighbors of the vertex chosen. Not only the nodes with same feature as virtual node.
         for vNode in virtualNodeList:
@@ -99,11 +106,24 @@ class Graph:
             maxNeightbor._visited = True
             nodesChosen.append(maxNeightbor)
             self.makeNodesVisited(maxNeightbor)
+            totalCount+=maxNeighborLength
 
-        return nodesChosen
+        return nodesChosen,totalCount
+
+
+def permute(vnodeList,l,r,combinationList):
+
+    if (l==r):
+        combinationList.append(copy.copy(vnodeList))
+    else:
+        for i in range(l,r+1):
+            vnodeList[l],vnodeList[i] = vnodeList[i],vnodeList[l]
+            permute(vnodeList,l+1,r,combinationList)
+            vnodeList[l],vnodeList[i] = vnodeList[i],vnodeList[l]
 
 
 if __name__ == "__main__":
+    start = time.time()
     Graph = Graph("bruteForce")
 
     Node1 = Graph.createNode(1, True, True, True)
@@ -151,9 +171,32 @@ if __name__ == "__main__":
     Graph.createBipartiteGraph(v2, "feature2")
     Graph.createBipartiteGraph(v3, "feature3")
 
-    nodesChosen = Graph.choseBestNodes([v1,v2,v3])
-    for node in nodesChosen:
+    a = [v1,v2,v3]
+    combinationList = []
+    ## Permute all different combinations of virtual nodes to be chosen
+    permute(a,0,len(a)-1,combinationList)
+    maxCoverage = 0
+
+    for comb in combinationList:
+        vNodePresent = False
+        ## For each combination chose the best nodes
+        nodesChosen,coverage = Graph.choseBestNodes(comb)
+        for node in nodesChosen:
+            if(node.virtual == True):
+                vNodePresent = True
+        ## If the nodes chosen in particular combination of virtual Nodes are all normal node
+        ## Chose the one with best maximum Coverage
+        if(not vNodePresent and coverage > maxCoverage):
+            maxCoverage = coverage
+            maxCoverageNodeSet = nodesChosen
+
+        Graph.markNodesUnvisited()
+
+    for node in maxCoverageNodeSet:
         print(node)
+
+    end = time.time()
+    print("Execution Time : " + str(end-start))
 
 
     Graph.drawGraphColors()
