@@ -2,6 +2,7 @@ import networkx as nx
 
 import matplotlib.pyplot as plt
 import copy
+import time
 
 class Node:
     def __init__(self,name,feature1,feature2,feature3):
@@ -136,7 +137,7 @@ class Graph:
                     containsAllFeatures = False
                 featureCount+=value;
 
-            if (containsAllFeatures and (featureCount >= maxFeatureCount)):
+            if (containsAllFeatures and (featureCount > maxFeatureCount)):
                 maxFeatureCount = featureCount
                 maxCoverageNode = coverage
 
@@ -147,6 +148,7 @@ class Graph:
 
 if __name__ == "__main__":
 
+    start = time.time()
     Graph = Graph("bruteForce")
 
     Node1 = Graph.createNode(1, True, True,True)
@@ -179,12 +181,15 @@ if __name__ == "__main__":
     Graph.createEdge(Node2,Node7)
 
     nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],3)
-    print(nodeSelected)
-    for cover in nodeSelected:
-        print(cover)
+    # print(nodeSelected)
+    # for cover in nodeSelected:
+    #     print(cover)
 
     bestNode = Graph.choseBestNodes(nodeSelected, ["feature1", "feature2", "feature3"])
     for node in bestNode:
         print(node.name)
+
+    end = time.time()
+    print("Execution Time : " + str(end - start))
 
     Graph.drawGraphColors()
