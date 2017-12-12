@@ -15,7 +15,7 @@ class Node:
         return self.name
 
 
-class Graph:
+class GraphClass:
     def __init__(self,name):
         self.name = name
         self.G = nx.Graph()
@@ -57,8 +57,9 @@ class Graph:
 
             node_color.append(value)
 
+        nx.circular_layout(self.G)
+        nx.draw(self.G,with_labels=True,node_color=node_color,pos=nx.circular_layout(self.G))
 
-        nx.draw(self.G,with_labels=True,node_color=node_color)
         plt.show()
 
     def createVirutalNode(self,name,feature1,feature2,feature3):
@@ -122,10 +123,7 @@ def permute(vnodeList,l,r,combinationList):
             vnodeList[l],vnodeList[i] = vnodeList[i],vnodeList[l]
 
 
-if __name__ == "__main__":
-    start = time.time()
-    Graph = Graph("bruteForce")
-
+def createBasicGraph(Graph):
     Node1 = Graph.createNode(1, True, True, True)
     Node2 = Graph.createNode(2, False, False, False)
     Node3 = Graph.createNode(3, True, False, False)
@@ -136,16 +134,6 @@ if __name__ == "__main__":
     Node8 = Graph.createNode(8, False, False, False)
     Node9 = Graph.createNode(9, True, True, True)
     Node10 = Graph.createNode(10, False, True, True)
-
-    ## Creating virtual nodes
-    v1 = Graph.createVirutalNode('v1',True,False,False)
-    v2 = Graph.createVirutalNode('v2',False,True,False)
-    v3 = Graph.createVirutalNode('v3',False,False,True)
-
-    ## Adding virtual nodes to the graph
-    Graph.addNode(v1)
-    Graph.addNode(v2)
-    Graph.addNode(v3)
 
     ## Creating edges between the nodes
     Graph.createEdge(Node1, Node2)
@@ -165,38 +153,84 @@ if __name__ == "__main__":
     Graph.createEdge(Node9, Node10)
     Graph.createEdge(Node2, Node7)
 
+def insertSelectedEdges(Graph,nodeSet):
+    nodeList = list(nodeSet)
+    for i in range(0,len(nodeList)):
+        for j in range(i+1,len(nodeList)):
+            node1 = nodeList[i]
+            node2 = nodeList[j]
+            Graph.createEdge(node1,node2)
+
+def createVirtualGraph(vGraph):
+    maxCoverageNodeSet = []
+    ## Creating virtual nodes
+    v1 = vGraph.createVirutalNode('v1', True, False, False)
+    v2 = vGraph.createVirutalNode('v2', False, True, False)
+    v3 = vGraph.createVirutalNode('v3', False, False, True)
+
+    ## Adding virtual nodes to the graph
+    vGraph.addNode(v1)
+    vGraph.addNode(v2)
+    vGraph.addNode(v3)
     ## Build the bipartite graph from virtual nodes
 
-    Graph.createBipartiteGraph(v1,"feature1")
-    Graph.createBipartiteGraph(v2, "feature2")
-    Graph.createBipartiteGraph(v3, "feature3")
+    vGraph.createBipartiteGraph(v1, "feature1")
+    vGraph.createBipartiteGraph(v2, "feature2")
+    vGraph.createBipartiteGraph(v3, "feature3")
 
-    a = [v1,v2,v3]
+    a = [v1, v2, v3]
     combinationList = []
     ## Permute all different combinations of virtual nodes to be chosen
-    permute(a,0,len(a)-1,combinationList)
+    permute(a, 0, len(a) - 1, combinationList)
     maxCoverage = 0
 
     for comb in combinationList:
         vNodePresent = False
         ## For each combination chose the best nodes
-        nodesChosen,coverage = Graph.choseBestNodes(comb)
+        nodesChosen, coverage = vGraph.choseBestNodes(comb)
         for node in nodesChosen:
-            if(node.virtual == True):
+            if (node.virtual == True):
                 vNodePresent = True
         ## If the nodes chosen in particular combination of virtual Nodes are all normal node
         ## Chose the one with best maximum Coverage
-        if(not vNodePresent and coverage > maxCoverage):
+        if (not vNodePresent and coverage > maxCoverage):
             maxCoverage = coverage
             maxCoverageNodeSet = nodesChosen
 
-        Graph.markNodesUnvisited()
+        vGraph.markNodesUnvisited()
 
-    for node in maxCoverageNodeSet:
-        print(node)
+    ## if all the combinations contain a virtual node
+
+
+    return maxCoverageNodeSet
+
+if __name__ == "__main__":
+
+    start = time.time()
+    ## Creating Basic Graph
+    Graph = GraphClass("bruteForce")
+    createBasicGraph(Graph)
+
+
+    ##Graph.drawGraphColors()
+    for i in range(2):
+        ## Building the virutal Graph
+        vGraph = GraphClass("virtual Graph")
+        vGraph.G = Graph.G.copy()
+        maxCoverageSet = createVirtualGraph(vGraph)
+        print("---------------------------------------")
+        for node in maxCoverageSet:
+            print(node)
+
+        #Graph.drawGraphColors()
+
+        ## Create edges between selected nodes
+        insertSelectedEdges(Graph,maxCoverageSet)
+        #Graph.drawGraphColors()
+        Graph.markNodesUnvisited()
+        del vGraph
+        ##del maxCoverageSet
+        print("diameter of the graph : " + str(nx.diameter(Graph.G)))
 
     end = time.time()
-    print("Execution Time : " + str(end-start))
-
-
-    Graph.drawGraphColors()
+    print("Execution Time : " + str(end - start))
