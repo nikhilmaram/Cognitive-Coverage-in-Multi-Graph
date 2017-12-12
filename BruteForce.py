@@ -27,7 +27,7 @@ class coverageClass:
         return string + "feature1:"+str(self.featureCountList["feature1"])\
         +", feature2:" + str(self.featureCountList["feature1"])+", feature3:"+str(self.featureCountList["feature2"])
 
-class Graph:
+class GraphClass:
     def __init__(self,name):
         self.name = name
         self.G = nx.Graph()
@@ -68,7 +68,7 @@ class Graph:
             else:
                 node_color.append(15)
 
-        nx.draw(self.G,with_labels=True,node_color=node_color)
+        nx.draw(self.G,with_labels=True,node_color=node_color,pos=nx.circular_layout(self.G))
         plt.show()
 
 
@@ -130,12 +130,12 @@ class Graph:
         containsAllFeatures = True
         for coverage in fullCoverageSet:
             featureCountList = coverage.featureCountList
-            featureCount = 0;
+            featureCount = 0
             containsAllFeatures = True
             for value in featureCountList.values():
                 if value == 0:
                     containsAllFeatures = False
-                featureCount+=value;
+                featureCount+=value
 
             if (containsAllFeatures and (featureCount > maxFeatureCount)):
                 maxFeatureCount = featureCount
@@ -143,53 +143,77 @@ class Graph:
 
         return maxCoverageNode.nodeList
 
+name2Node = {}
 
+def createBasicGraph(Graph):
+    Node1 = Graph.createNode(1, True, True, True)
+    Node2 = Graph.createNode(2, False, False, False)
+    Node3 = Graph.createNode(3, True, False, False)
+    Node4 = Graph.createNode(4, True, True, True)
+    Node5 = Graph.createNode(5, False, True, True)
+    Node6 = Graph.createNode(6, False, True, False)
+    Node7 = Graph.createNode(7, False, False, True)
+    Node8 = Graph.createNode(8, False, False, False)
+    Node9 = Graph.createNode(9, True, True, True)
+    Node10 = Graph.createNode(10, False, True, True)
+
+    name2Node['1'] = Node1
+    name2Node['2'] = Node2
+    name2Node['3'] = Node3
+    name2Node['4'] = Node4
+    name2Node['5'] = Node5
+    name2Node['6'] = Node6
+    name2Node['7'] = Node7
+    name2Node['8'] = Node8
+    name2Node['9'] = Node9
+    name2Node['10'] = Node10
+
+
+    ## Creating edges between the nodes
+    Graph.createEdge(Node1, Node2)
+    Graph.createEdge(Node1, Node3)
+    Graph.createEdge(Node1, Node4)
+    Graph.createEdge(Node1, Node5)
+    Graph.createEdge(Node2, Node3)
+    Graph.createEdge(Node3, Node4)
+    Graph.createEdge(Node4, Node5)
+    Graph.createEdge(Node1, Node6)
+    Graph.createEdge(Node6, Node7)
+    Graph.createEdge(Node6, Node8)
+    Graph.createEdge(Node6, Node9)
+    Graph.createEdge(Node6, Node10)
+    Graph.createEdge(Node7, Node8)
+    Graph.createEdge(Node8, Node9)
+    Graph.createEdge(Node9, Node10)
+    Graph.createEdge(Node2, Node7)
+
+def insertSelectedEdges(Graph,nodeSet):
+    nodeList = list(nodeSet)
+    for i in range(0,len(nodeList)):
+        for j in range(i+1,len(nodeList)):
+            node1Name = nodeList[i].name
+            node2Name = nodeList[j].name
+            Graph.createEdge(name2Node[node1Name],name2Node[node2Name])
 
 
 if __name__ == "__main__":
 
     start = time.time()
-    Graph = Graph("bruteForce")
+    Graph = GraphClass("bruteForce")
 
-    Node1 = Graph.createNode(1, True, True,True)
-    Node2 = Graph.createNode(2, False, False,False)
-    Node3 = Graph.createNode(3, True, False,False)
-    Node4 = Graph.createNode(4, True, True,True)
-    Node5 = Graph.createNode(5, False, True,True)
-    Node6 = Graph.createNode(6, False, True,False)
-    Node7 = Graph.createNode(7, False, False,True)
-    Node8 = Graph.createNode(8, False, False,False)
-    Node9 = Graph.createNode(9, True, True,True)
-    Node10 = Graph.createNode(10, False, True,True)
+    createBasicGraph(Graph)
 
+    for i in range(2):
+        nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],3)
+        bestNode = Graph.choseBestNodes(nodeSelected, ["feature1", "feature2", "feature3"])
+        for node in bestNode:
+            print(node.name)
 
-    Graph.createEdge(Node1,Node2)
-    Graph.createEdge(Node1,Node3)
-    Graph.createEdge(Node1,Node4)
-    Graph.createEdge(Node1,Node5)
-    Graph.createEdge(Node2,Node3)
-    Graph.createEdge(Node3,Node4)
-    Graph.createEdge(Node4,Node5)
-    Graph.createEdge(Node1,Node6)
-    Graph.createEdge(Node6,Node7)
-    Graph.createEdge(Node6,Node8)
-    Graph.createEdge(Node6,Node9)
-    Graph.createEdge(Node6,Node10)
-    Graph.createEdge(Node7,Node8)
-    Graph.createEdge(Node8,Node9)
-    Graph.createEdge(Node9,Node10)
-    Graph.createEdge(Node2,Node7)
+        ##Graph.drawGraphColors()
 
-    nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],3)
-    # print(nodeSelected)
-    # for cover in nodeSelected:
-    #     print(cover)
-
-    bestNode = Graph.choseBestNodes(nodeSelected, ["feature1", "feature2", "feature3"])
-    for node in bestNode:
-        print(node.name)
+        insertSelectedEdges(Graph,bestNode)
+        ##Graph.drawGraphColors()
+        print ("diameter of the graph : " + str(nx.diameter(Graph.G)))
 
     end = time.time()
     print("Execution Time : " + str(end - start))
-
-    Graph.drawGraphColors()
