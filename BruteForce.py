@@ -1,8 +1,9 @@
 import networkx as nx
-
 import matplotlib.pyplot as plt
 import copy
 import time
+import creatingGraph as cg
+
 
 class Node:
     def __init__(self,name,feature1,feature2,feature3):
@@ -10,6 +11,8 @@ class Node:
         self.feature1 = feature1
         self.feature2 = feature2
         self.feature3 =  feature3
+        self._covered = False
+
     def __str__(self):
         return self.name
 
@@ -143,7 +146,29 @@ class GraphClass:
 
         return maxCoverageNode.nodeList
 
-name2Node = {}
+    def setNodesCovered(self, nodeList):
+        for node in nodeList:
+            node = cg.name2Node[node.name]
+            for neighbor in self.G.neighbors(node):
+                neighbor._covered = True
+            node._covered = True
+
+    def measureCoveredNodes(self):
+        nodeCount = 0
+        coveredCount = 0
+        for node in self.G.nodes:
+            nodeCount = nodeCount + 1
+            if (node._covered == True):
+                coveredCount = coveredCount + 1
+        return nodeCount, coveredCount
+
+    def insertSelectedEdges(self, nodeSet):
+        nodeList = list(nodeSet)
+        for i in range(0, len(nodeList)):
+            for j in range(i + 1, len(nodeList)):
+                node1Name = nodeList[i].name
+                node2Name = nodeList[j].name
+                self.createEdge(cg.name2Node[node1Name], cg.name2Node[node2Name])
 
 def createBasicGraph(Graph):
     Node1 = Graph.createNode(1, True, True, True)
@@ -157,16 +182,16 @@ def createBasicGraph(Graph):
     Node9 = Graph.createNode(9, True, True, True)
     Node10 = Graph.createNode(10, False, True, True)
 
-    name2Node['1'] = Node1
-    name2Node['2'] = Node2
-    name2Node['3'] = Node3
-    name2Node['4'] = Node4
-    name2Node['5'] = Node5
-    name2Node['6'] = Node6
-    name2Node['7'] = Node7
-    name2Node['8'] = Node8
-    name2Node['9'] = Node9
-    name2Node['10'] = Node10
+    cg.name2Node['1'] = Node1
+    cg.name2Node['2'] = Node2
+    cg.name2Node['3'] = Node3
+    cg.name2Node['4'] = Node4
+    cg.name2Node['5'] = Node5
+    cg.name2Node['6'] = Node6
+    cg.name2Node['7'] = Node7
+    cg.name2Node['8'] = Node8
+    cg.name2Node['9'] = Node9
+    cg.name2Node['10'] = Node10
 
 
     ## Creating edges between the nodes
@@ -187,13 +212,8 @@ def createBasicGraph(Graph):
     Graph.createEdge(Node9, Node10)
     Graph.createEdge(Node2, Node7)
 
-def insertSelectedEdges(Graph,nodeSet):
-    nodeList = list(nodeSet)
-    for i in range(0,len(nodeList)):
-        for j in range(i+1,len(nodeList)):
-            node1Name = nodeList[i].name
-            node2Name = nodeList[j].name
-            Graph.createEdge(name2Node[node1Name],name2Node[node2Name])
+
+
 
 
 if __name__ == "__main__":
@@ -201,19 +221,32 @@ if __name__ == "__main__":
     start = time.time()
     Graph = GraphClass("bruteForce")
 
-    createBasicGraph(Graph)
+    ##createBasicGraph(Graph)
+    cg.creatingGraph(Graph,0,100)
+    ##Graph.drawGraphColors()
 
-    for i in range(2):
+    for i in range(4):
         nodeSelected = Graph.choseRecursiveCoverageSet(["feature1", "feature2", "feature3"],3)
-        bestNode = Graph.choseBestNodes(nodeSelected, ["feature1", "feature2", "feature3"])
-        for node in bestNode:
+        bestNodes = Graph.choseBestNodes(nodeSelected, ["feature1", "feature2", "feature3"])
+        for node in bestNodes:
             print(node.name)
 
         ##Graph.drawGraphColors()
-
-        insertSelectedEdges(Graph,bestNode)
+        ## Setting the nodes which are covered
+        Graph.setNodesCovered(bestNodes)
+        Graph.insertSelectedEdges(bestNodes)
         ##Graph.drawGraphColors()
-        print ("diameter of the graph : " + str(nx.diameter(Graph.G)))
+        try:
+            diameter = nx.diameter(Graph.G)
+        except nx.NetworkXError as m :
+            diameter = "infinity"
+        print ("diameter of the graph : " + str(diameter))
+        nodeCount, coveredCount = Graph.measureCoveredNodes()
+        print("Node Count = %d , Coverage Count = %d" % (nodeCount, coveredCount))
 
     end = time.time()
+    ## Calculating the nodes that are covered
+
+
     print("Execution Time : " + str(end - start))
+
