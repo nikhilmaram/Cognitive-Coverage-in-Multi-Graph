@@ -2,6 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import copy
 import time
+import creatingGraph as cg
+
 
 class Node:
     def __init__(self,name,feature1,feature2,feature3):
@@ -11,9 +13,10 @@ class Node:
         self.feature3 =  feature3
         self.virtual = False
         self._visited = False
+        self._covered = False
+
     def __str__(self):
         return self.name
-
 
 class GraphClass:
     def __init__(self,name):
@@ -111,6 +114,31 @@ class GraphClass:
 
         return nodesChosen,totalCount
 
+    def setNodesCovered(self, nodeList):
+        for node in nodeList:
+            node = cg.name2Node[node.name]
+            for neighbor in self.G.neighbors(node):
+                neighbor._covered = True
+            node._covered = True
+
+    def measureCoveredNodes(self):
+        nodeCount = 0
+        coveredCount = 0
+        for node in self.G.nodes:
+            nodeCount = nodeCount + 1
+            if (node._covered == True):
+                coveredCount = coveredCount + 1
+        return nodeCount, coveredCount
+
+    def insertSelectedEdges(self, nodeSet):
+        nodeList = list(nodeSet)
+        for i in range(0, len(nodeList)):
+            for j in range(i + 1, len(nodeList)):
+                node1 = nodeList[i]
+                node2 = nodeList[j]
+                self.createEdge(node1, node2)
+
+
 
 def permute(vnodeList,l,r,combinationList):
 
@@ -121,7 +149,6 @@ def permute(vnodeList,l,r,combinationList):
             vnodeList[l],vnodeList[i] = vnodeList[i],vnodeList[l]
             permute(vnodeList,l+1,r,combinationList)
             vnodeList[l],vnodeList[i] = vnodeList[i],vnodeList[l]
-
 
 def createBasicGraph(Graph):
     Node1 = Graph.createNode(1, True, True, True)
@@ -152,14 +179,6 @@ def createBasicGraph(Graph):
     Graph.createEdge(Node8, Node9)
     Graph.createEdge(Node9, Node10)
     Graph.createEdge(Node2, Node7)
-
-def insertSelectedEdges(Graph,nodeSet):
-    nodeList = list(nodeSet)
-    for i in range(0,len(nodeList)):
-        for j in range(i+1,len(nodeList)):
-            node1 = nodeList[i]
-            node2 = nodeList[j]
-            Graph.createEdge(node1,node2)
 
 def createVirtualGraph(vGraph):
     maxCoverageNodeSet = []
@@ -208,12 +227,12 @@ if __name__ == "__main__":
 
     start = time.time()
     ## Creating Basic Graph
-    Graph = GraphClass("bruteForce")
-    createBasicGraph(Graph)
-
+    Graph = GraphClass("diverseCoverage")
+    ##createBasicGraph(Graph)
+    cg.creatingGraph(Graph,0,5100)
 
     ##Graph.drawGraphColors()
-    for i in range(2):
+    for i in range(4):
         ## Building the virutal Graph
         vGraph = GraphClass("virtual Graph")
         vGraph.G = Graph.G.copy()
@@ -222,15 +241,27 @@ if __name__ == "__main__":
         for node in maxCoverageSet:
             print(node)
 
-        #Graph.drawGraphColors()
-
+        ## Setting the nodes as covered
+        Graph.setNodesCovered(maxCoverageSet)
         ## Create edges between selected nodes
-        insertSelectedEdges(Graph,maxCoverageSet)
-        #Graph.drawGraphColors()
+        Graph.insertSelectedEdges(maxCoverageSet)
+        ## Vertices are marked unvisited for the next iteration
         Graph.markNodesUnvisited()
+
         del vGraph
         ##del maxCoverageSet
-        print("diameter of the graph : " + str(nx.diameter(Graph.G)))
+        try:
+            diameter = nx.diameter(Graph.G)
+        except nx.NetworkXError as m :
+            diameter = "infinity"
+        print("diameter of the graph : " + str(diameter))
+        nodeCount, coveredCount = Graph.measureCoveredNodes()
+        print("Node Count = %d , Coverage Count = %d" % (nodeCount, coveredCount))
 
     end = time.time()
+
+    ## Calculating all the nodes that are covered
+
+
     print("Execution Time : " + str(end - start))
+    ##Graph.drawGraphColors()
