@@ -166,7 +166,6 @@ class GraphClass:
 
         return maxCoverageNode.nodeList,maxFeatureCount
 
-
     def choseLessBestNodes(self,virtualNodeList,countFeatures = False):
         nodesChosen = []
         totalCount = 0
@@ -227,7 +226,6 @@ class GraphClass:
         return nodesChosen,totalCount
 
 
-
 def permute(vnodeList,l,r,combinationList):
 
     if (l==r):
@@ -252,6 +250,7 @@ def createBasicGraph(Graph):
     Node8 = Graph.createNode(8, False, False, False)
     Node9 = Graph.createNode(9, True, True, True)
     Node10 = Graph.createNode(10, False, True, True)
+    Node11 = Graph.createNode(11, True,False, False)
 
     cg.name2Node['1'] = Node1
     cg.name2Node['2'] = Node2
@@ -263,6 +262,7 @@ def createBasicGraph(Graph):
     cg.name2Node['8'] = Node8
     cg.name2Node['9'] = Node9
     cg.name2Node['10'] = Node10
+    cg.name2Node['11'] = Node11
 
     ## Creating edges between the nodes
     Graph.createEdge(Node1, Node2)
@@ -281,6 +281,7 @@ def createBasicGraph(Graph):
     Graph.createEdge(Node8, Node9)
     Graph.createEdge(Node9, Node10)
     Graph.createEdge(Node2, Node7)
+    Graph.createEdge(Node2, Node11)
 
 def createVirtualGraph(vGraph):
     maxCoverageNodeSet = []
@@ -325,27 +326,6 @@ def bestNodeSet(vGraph,combinationList):
 
     return maxCoverageNodeSet
 
-def createVirtualGraphWithLessNodesChosen(vGraph):
-    ## Creating virtual nodes
-    v1 = vGraph.createVirutalNode('v1', True, False, False)
-    v2 = vGraph.createVirutalNode('v2', False, True, False)
-    v3 = vGraph.createVirutalNode('v3', False, False, True)
-
-    ## Adding virtual nodes to the graph
-    vGraph.addNode(v1)
-    vGraph.addNode(v2)
-    vGraph.addNode(v3)
-    ## Build the bipartite graph from virtual nodes
-
-    vGraph.createBipartiteGraph(v1, "feature1")
-    vGraph.createBipartiteGraph(v2, "feature2")
-    vGraph.createBipartiteGraph(v3, "feature3")
-
-    a = [v1, v2, v3]
-    combinationList = [[[v1,v2],[v3]],[[v1,v3],[v2]],[[v2,v3],[v1]]]
-    ## Permute all different combinations of virtual nodes to be chosen
-    ##permute(a, 0, len(a) - 1, combinationList)
-
 
 if __name__ == "__main__":
 
@@ -355,7 +335,8 @@ if __name__ == "__main__":
     ##createBasicGraph(Graph)
     cg.creatingGraph(Graph,0,5100)
 
-    lessNodes = False
+    lessNodes = True
+    moreNodes = False
 
     ##Graph.drawGraphColors()
     ## When features same as number of people chosen
@@ -364,13 +345,18 @@ if __name__ == "__main__":
         vGraph = GraphClass("virtual Graph")
         vGraph.G = Graph.G.copy()
         vNodeList = createVirtualGraph(vGraph)
-        if not lessNodes:
+        if not lessNodes and not moreNodes:
             combinationList = []
             permute(vNodeList, 0, 2, combinationList)
-        else:
+        elif lessNodes and not moreNodes:
             combinationList = [[[vNodeList[0], vNodeList[1]], [vNodeList[2]]],
                                [[vNodeList[2], vNodeList[1]], [vNodeList[0]]],
                                [[vNodeList[0], vNodeList[2]], [vNodeList[1]]]]
+        else:
+            combinationList = [[[vNodeList[0]], [vNodeList[1]], [vNodeList[2]],[vNodeList[0]]],
+                               [[vNodeList[2]], [vNodeList[1]], [vNodeList[0]], [vNodeList[1]]],
+                               [[vNodeList[0]], [vNodeList[2]], [vNodeList[1]],[vNodeList[2]]]]
+
         maxCoverageSet = bestNodeSet(vGraph,combinationList)
         print("---------------------------------------")
         for node in maxCoverageSet:
@@ -396,7 +382,5 @@ if __name__ == "__main__":
     end = time.time()
 
     ## Calculating all the nodes that are covered
-
-
     print("Execution Time : " + str(end - start))
-    ##Graph.drawGraphColors()
+    #Graph.drawGraphColors()
